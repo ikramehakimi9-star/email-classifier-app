@@ -1,60 +1,65 @@
-import streamlit as st
-import pickle
 import string
+import pickle
+import streamlit as st
+import streamlit_analytics
 import nltk
 from nltk.corpus import stopwords
 from nltk.stem.porter import PorterStemmer
 
-# Téléchargement des dépendances NLTK obligatoires
-nltk.download('punkt')
-nltk.download('punkt_tab')
-nltk.download('stopwords')
+# 1. Téléchargement des dépendances NLTK obligatoires
+nltk.download('punkt', quiet=True)
+nltk.download('punkt_tab', quiet=True)
+nltk.download('stopwords', quiet=True)
 
+# 2. Initialisation des outils de texte
 ps = PorterStemmer()
 stop_words_set = set(stopwords.words('english'))
+punctuation_set = set(string.punctuation)
 
 def transform_text(text):
+    # Passage en minuscules
     text = text.lower()
-    text = nltk.word_tokenize(text)
+    
+    # Tokenisation
+    tokens = nltk.word_tokenize(text)
+    
+    # Filtrage : Garder uniquement l'alphanumérique, retirer stopwords et ponctuations
+    clean_tokens = [
+        ps.stem(word) for word in tokens 
+        if word.isalnum() and word not in stop_words_set and word not in punctuation_set
+    ]
+    
+    # Reconstitution du texte
+    return " ".join(clean_tokens)
 
-    y = []
-    for i in text:
-        if i.isalnum():
-            y.append(i)
+# 3. Chargement des modèles sauvegardés
+try:
+    tfidf = pickle.load(open('vectorizer.pkl', 'rb'))
+    model = pickle.load(open('model.pkl', 'rb'))
+except FileNotFoundError as e:
+    st.error(f"Erreur de chargement : Assurez-vous que les fichiers 'vectorizer.pkl' et 'model.pkl' sont dans le même dossier que ce script. ({e})")
+    st.stop()
 
-    text = y[:]
-    y.clear()
-
-    for i in text:
-        if i not in stop_words_set and i not in string.punctuation:
-            y.append(i)
-
-    text = y[:]
-    y.clear()
-
-    for i in text:
-        y.append(ps.stem(i))
-
-    return " ".join(y)
-
-# CHARGEMENT R-RASMI MN L-MILFAT DYAL JUPITER
-tfidf = pickle.load(open('vectorizer.pkl', 'rb'))
-model = pickle.load(open('model.pkl', 'rb'))
-
+# 4. Interface Streamlit
 st.title("Email/SMS Spam Classifier")
 
 input_sms = st.text_area("Enter the message")
 
 if st.button('Predict'):
-    if input_sms:
-        # 1. preprocess
+    if input_sms.strip():  # .strip() évite de valider si l'utilisateur met juste des espaces
+        # 1. Preprocess
         transformed_sms = transform_text(input_sms)
-        # 2. vectorize
+        
+        # 2. Vectorize
         vector_input = tfidf.transform([transformed_sms])
-        # 3. predict
-        result = model.predict(vector_input)
+        
+        # 3. Predict
+        result = model.predict(vector_input)[0]  # Récupération de la valeur (0 ou 1)
+        
         # 4. Display
         if result == 1:
             st.header("Spam 🚨")
         else:
             st.header("Not Spam ✅")
+    else:
+        st.warning("Please enter a valid message before predicting.")
