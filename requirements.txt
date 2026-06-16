@@ -1,5 +1,5 @@
 streamlit
 nltk
 scikit-learn
-streamlit-analytics
+streamlit-analytics2
 
