@@ -1,7 +1,7 @@
 import string
 import pickle
 import streamlit as st
-import streamlit_analytics
+import streamlit_analytics2 as streamlit_analytics  # Version moderne et compatible
 import nltk
 from nltk.corpus import stopwords
 from nltk.stem.porter import PorterStemmer
@@ -40,26 +40,28 @@ except FileNotFoundError as e:
     st.error(f"Erreur de chargement : Assurez-vous que les fichiers 'vectorizer.pkl' et 'model.pkl' sont dans le même dossier que ce script. ({e})")
     st.stop()
 
-# 4. Interface Streamlit
-st.title("Email/SMS Spam Classifier")
+# 4. Interface Streamlit ACTIVÉE avec le suivi des statistiques
+# Remplacer 'votre_mot_de_passe' par le mot de passe de votre choix pour sécuriser vos données
+with streamlit_analytics.track(password="admin123"):
+    st.title("Email/SMS Spam Classifier")
 
-input_sms = st.text_area("Enter the message")
+    input_sms = st.text_area("Enter the message")
 
-if st.button('Predict'):
-    if input_sms.strip():  # .strip() évite de valider si l'utilisateur met juste des espaces
-        # 1. Preprocess
-        transformed_sms = transform_text(input_sms)
-        
-        # 2. Vectorize
-        vector_input = tfidf.transform([transformed_sms])
-        
-        # 3. Predict
-        result = model.predict(vector_input)[0]  # Récupération de la valeur (0 ou 1)
-        
-        # 4. Display
-        if result == 1:
-            st.header("Spam 🚨")
+    if st.button('Predict'):
+        if input_sms.strip():  # .strip() évite de valider si l'utilisateur met juste des espaces
+            # 1. Preprocess
+            transformed_sms = transform_text(input_sms)
+            
+            # 2. Vectorize
+            vector_input = tfidf.transform([transformed_sms])
+            
+            # 3. Predict
+            result = model.predict(vector_input)[0]  # Récupération de la valeur (0 ou 1)
+            
+            # 4. Display
+            if result == 1:
+                st.header("Spam 🚨")
+            else:
+                st.header("Not Spam ✅")
         else:
-            st.header("Not Spam ✅")
-    else:
-        st.warning("Please enter a valid message before predicting.")
+            st.warning("Please enter a valid message before predicting.")
